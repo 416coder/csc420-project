@@ -68,23 +68,52 @@ def get_face_colors(transformed_face):
 
     return avg_sqr_colors
 
+def plot_cube_layout(all_colors, with_spaces=True):
+    # Plot the cube layout
+    straight_img = np.zeros((18, 3, 3))
+    for i in range(54):
+        straight_img[int(i / 3), i % 3, 0] = int(all_colors[i][0])
+        straight_img[int(i / 3), i % 3, 1] = int(all_colors[i][1])
+        straight_img[int(i / 3), i % 3, 2] = int(all_colors[i][2])
+
+    if with_spaces:
+        def create_side_model(side_colors):
+            side = np.zeros((9 + 3 + 1, 9 + 3 + 1, 3))
+            for i in range(3):
+                for j in range(3):
+                    side[4*i+1:4*i+4, 4*j+1:4*j+4] = side_colors[3*i + j]
+
+            return side
+
+        show_img = np.zeros((27 + 9 + 1, 36 + 12 + 1, 3))
+
+        show_img[0:13, 12:25] = create_side_model(all_colors[0:9])
+        show_img[12:25, 0:13] = create_side_model(all_colors[9:18])
+        show_img[12:25, 12:25] = create_side_model(all_colors[18:27])
+        show_img[12:25, 24:37] = create_side_model(all_colors[27:36])
+        show_img[12:25, 36:49] = create_side_model(all_colors[36:45])
+        show_img[24:37, 12:25] = create_side_model(all_colors[45:54])
+
+    else:
+        show_img = np.zeros((9, 12, 3))
+
+        show_img[:3, 3:6] = straight_img[:3, :3]
+        show_img[3:6, :3] = straight_img[3:6, :3]
+        show_img[3:6, 3:6] = straight_img[6:9, :3]
+        show_img[3:6, 6:9] = straight_img[9:12, :3]
+        show_img[3:6, 9:12] = straight_img[12:15, :3]
+        show_img[6:9, 3:6] = straight_img[15:18, :3]
+
+    plt.figure()
+    plt.imshow(np.ndarray.astype(show_img, np.uint8))
+    plt.show()
+
 all_colors = []
 for side in sides:
     img_name = side + "2.jpg"
     x, y = get_corners(img_name)
     warped = compute_homography(img_name, x, y)
     all_colors += get_face_colors(warped)
-
-# Plot the cube layout
-show_img = np.zeros((18, 3, 3))
-for i in range(54):
-    show_img[int(i / 3), i % 3, 0] = int(all_colors[i][0])
-    show_img[int(i / 3), i % 3, 1] = int(all_colors[i][1])
-    show_img[int(i / 3), i % 3, 2] = int(all_colors[i][2])
-plt.figure()
-plt.imshow(np.ndarray.astype(show_img, np.uint8))
-plt.show()
-
 
 centers, distortion = kmeans(all_colors, k_or_guess = 6)
 labels = []
@@ -102,6 +131,9 @@ labels_to_colors[labels[31]] = "g"
 labels_to_colors[labels[40]] = "o"
 labels_to_colors[labels[49]] = "w"
 
+all_centers = [centers[label] for label in labels]
+plot_cube_layout(all_centers)
+
 input_str = ""
 for label in labels:
     input_str += labels_to_colors[label]
@@ -116,4 +148,3 @@ print(utils.solve(input_str, 'Kociemba'))
 # plt.plot([1, 57*f], [19*f, 19*f], 'r-')
 # plt.plot([1, 57*f], [38*f, 38*f], 'r-')
 # plt.show()
-
