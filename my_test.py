@@ -69,7 +69,6 @@ def get_face_colors(transformed_face):
     return avg_sqr_colors
 
 def plot_cube_layout(all_colors, with_spaces=True):
-    # Plot the cube layout
     straight_img = np.zeros((18, 3, 3))
     for i in range(54):
         straight_img[int(i / 3), i % 3, 0] = int(all_colors[i][0])
@@ -108,6 +107,8 @@ def plot_cube_layout(all_colors, with_spaces=True):
     plt.imshow(np.ndarray.astype(show_img, np.uint8))
     plt.show()
 
+
+# Find the average RGB value for each square on the cube
 all_colors = []
 for side in sides:
     img_name = side + "2.jpg"
@@ -115,6 +116,8 @@ for side in sides:
     warped = compute_homography(img_name, x, y)
     all_colors += get_face_colors(warped)
 
+# Performs k-Means clustering on the RGB values and give them
+# each one of k labels, where k = 6
 centers, distortion = kmeans(all_colors, k_or_guess = 6)
 labels = []
 for color in all_colors:
@@ -123,6 +126,13 @@ for color in all_colors:
         dists.append(np.linalg.norm(color - center))
     labels.append(np.argmin(dists))
 
+# Plot the Rubik's cube's faces using the cluster center as the
+# representative color for each square
+all_centers = [centers[label] for label in labels]
+plot_cube_layout(all_centers)
+
+# Assign a color to each label, consistent with the standard
+# Rubik's cube color conventions
 labels_to_colors = [""] * 6
 labels_to_colors[labels[4]]  = "y"
 labels_to_colors[labels[13]] = "b"
@@ -131,13 +141,14 @@ labels_to_colors[labels[31]] = "g"
 labels_to_colors[labels[40]] = "o"
 labels_to_colors[labels[49]] = "w"
 
-all_centers = [centers[label] for label in labels]
-plot_cube_layout(all_centers)
-
+# Create the input string for the solver algorithm using the
+# label to color mapping created previously
 input_str = ""
 for label in labels:
     input_str += labels_to_colors[label]
 print(input_str)
+
+# Call the solving algorithm
 print(utils.solve(input_str, 'Kociemba'))
 
 # plt.figure()
