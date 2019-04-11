@@ -76,28 +76,33 @@ def plot_cube_layout(all_colors, with_spaces=True):
         straight_img[int(i / 3), i % 3, 2] = int(all_colors[i][2])
 
     if with_spaces:
+        s = 35
+        ss = 3*s + 3 + 1
         def create_side_model(side_colors):
-            side = np.zeros((9 + 3 + 1, 9 + 3 + 1, 3))
+            side = np.zeros((ss, ss, 3))
             for i in range(3):
                 for j in range(3):
-                    side[4*i+1:4*i+4, 4*j+1:4*j+4] = side_colors[3*i + j]
+                    side[(s+1)*i+1:(s+1)*i+(s+1), (s+1)*j+1:(s+1)*j+(s+1)] = side_colors[3*i + j]
 
+            # plt.figure()
+            # plt.imshow(np.ndarray.astype(side, np.uint8))
+            # plt.show()
             return side
 
-        show_img = np.zeros((27 + 9 + 1, 36 + 12 + 1, 3))
+        show_img = np.zeros((9*s + 9 + 1, 12*s + 12 + 1, 3))
 
-        show_img[0:13, 12:25] = create_side_model(all_colors[0:9])
-        show_img[12:25, 0:13] = create_side_model(all_colors[9:18])
-        show_img[12:25, 12:25] = create_side_model(all_colors[18:27])
-        show_img[12:25, 24:37] = create_side_model(all_colors[27:36])
-        show_img[12:25, 36:49] = create_side_model(all_colors[36:45])
-        show_img[24:37, 12:25] = create_side_model(all_colors[45:54])
+        show_img[0:ss, ss-1:2*ss-1] = create_side_model(all_colors[0:9])
+        show_img[ss-1:2*ss-1, 0:ss] = create_side_model(all_colors[9:18])
+        show_img[ss-1:2*ss-1, ss-1:2*ss-1] = create_side_model(all_colors[18:27])
+        show_img[ss-1:2*ss-1, 2*ss-2:3*ss-2] = create_side_model(all_colors[27:36])
+        show_img[ss-1:2*ss-1, 3*ss-3:4*ss-3] = create_side_model(all_colors[36:45])
+        show_img[2*ss-2:3*ss-2, ss-1:2*ss-1] = create_side_model(all_colors[45:54])
 
     else:
         show_img = np.zeros((9, 12, 3))
 
-        show_img[:3, 3:6] = straight_img[:3, :3]
-        show_img[3:6, :3] = straight_img[3:6, :3]
+        show_img[0:3, 3:6] = straight_img[:3, :3]
+        show_img[3:6, 0:3] = straight_img[3:6, :3]
         show_img[3:6, 3:6] = straight_img[6:9, :3]
         show_img[3:6, 6:9] = straight_img[9:12, :3]
         show_img[3:6, 9:12] = straight_img[12:15, :3]
@@ -111,7 +116,7 @@ def plot_cube_layout(all_colors, with_spaces=True):
 # Find the average RGB value for each square on the cube
 all_colors = []
 for side in sides:
-    img_name = side + "2.jpg"
+    img_name = side + "1.jpg"
     x, y = get_corners(img_name)
     warped = compute_homography(img_name, x, y)
     all_colors += get_face_colors(warped)
@@ -146,7 +151,6 @@ labels_to_colors[labels[49]] = "w"
 input_str = ""
 for label in labels:
     input_str += labels_to_colors[label]
-print(input_str)
 
 # Call the solving algorithm
 print(utils.solve(input_str, 'Kociemba'))
