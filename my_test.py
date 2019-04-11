@@ -3,6 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from skimage import transform as tf
 from scipy.cluster.vq import vq, kmeans, whiten
+from rubik_solver import utils
 
 # plt.subplot(121),plt.imshow(img,cmap = 'gray')
 # plt.title('Original Image'), plt.xticks([]), plt.yticks([])
@@ -69,20 +70,50 @@ def get_face_colors(transformed_face):
 
 all_colors = []
 for side in sides:
-    img_name = side + "1.jpg"
+    img_name = side + "2.jpg"
     x, y = get_corners(img_name)
     warped = compute_homography(img_name, x, y)
     all_colors += get_face_colors(warped)
 
+# Plot the cube layout
+show_img = np.zeros((18, 3, 3))
+for i in range(54):
+    show_img[int(i / 3), i % 3, 0] = int(all_colors[i][0])
+    show_img[int(i / 3), i % 3, 1] = int(all_colors[i][1])
+    show_img[int(i / 3), i % 3, 2] = int(all_colors[i][2])
+plt.figure()
+plt.imshow(np.ndarray.astype(show_img, np.uint8))
+plt.show()
+
 
 centers, distortion = kmeans(all_colors, k_or_guess = 6)
-print(centers)
+labels = []
+for color in all_colors:
+    dists = []
+    for center in centers:
+        dists.append(np.linalg.norm(color - center))
+    labels.append(np.argmin(dists))
 
-plt.figure()
-plt.imshow(warped)
-plt.plot(x2 + x2[:1], y2 + y2[:1], 'r-')
-plt.plot([19*f, 19*f], [1, 57*f], 'r-')
-plt.plot([38*f, 38*f], [1, 57*f], 'r-')
-plt.plot([1, 57*f], [19*f, 19*f], 'r-')
-plt.plot([1, 57*f], [38*f, 38*f], 'r-')
-plt.show()
+labels_to_colors = [""] * 6
+labels_to_colors[labels[4]]  = "y"
+labels_to_colors[labels[13]] = "b"
+labels_to_colors[labels[22]] = "r"
+labels_to_colors[labels[31]] = "g"
+labels_to_colors[labels[40]] = "o"
+labels_to_colors[labels[49]] = "w"
+
+input_str = ""
+for label in labels:
+    input_str += labels_to_colors[label]
+print(input_str)
+print(utils.solve(input_str, 'Kociemba'))
+
+# plt.figure()
+# plt.imshow(warped)
+# plt.plot(x2 + x2[:1], y2 + y2[:1], 'r-')
+# plt.plot([19*f, 19*f], [1, 57*f], 'r-')
+# plt.plot([38*f, 38*f], [1, 57*f], 'r-')
+# plt.plot([1, 57*f], [19*f, 19*f], 'r-')
+# plt.plot([1, 57*f], [38*f, 38*f], 'r-')
+# plt.show()
+
