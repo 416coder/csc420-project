@@ -116,7 +116,7 @@ def plot_cube_layout(all_colors, with_spaces=True):
 # Find the average RGB value for each square on the cube
 all_colors = []
 for side in sides:
-    img_name = side + "1.jpg"
+    img_name = "test_images/" + side + "2.jpg"
     x, y = get_corners(img_name)
     warped = compute_homography(img_name, x, y)
     all_colors += get_face_colors(warped)
