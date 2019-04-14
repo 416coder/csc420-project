@@ -4,19 +4,18 @@ from matplotlib import pyplot as plt
 from skimage import transform as tf
 from scipy.cluster.vq import vq, kmeans, whiten
 from rubik_solver import utils
-from sty import fg, bg, ef, rs, RgbFg
 
-# plt.subplot(121),plt.imshow(img,cmap = 'gray')
-# plt.title('Original Image'), plt.xticks([]), plt.yticks([])
-# plt.subplot(122),plt.imshow(edges,cmap = 'gray')
-# plt.title('Edge Image'), plt.xticks([]), plt.yticks([])
-# plt.show()
-
+# Define global strings for image reading
 sides = ["top", "left", "front", "right", "back", "bottom"]
+dataset = "2"
 
+# Set this global flag True to see intermediate plots
+plot_intermediate_results = False
+
+# Find the corners of the cube in the given image
 def get_corners_canny(img_name):
     img = cv2.imread(img_name, 0)
-    edges = cv2.Canny(img,300,300)
+    edges = cv2.Canny(img, 300, 300)
 
     indices = np.where(edges != [0])
     coordinates = zip(indices[0], indices[1])
@@ -30,13 +29,17 @@ def get_corners_canny(img_name):
     x = [x_min, x_max, x_max, x_min]
     y = [y_min, y_min, y_max, y_max]
 
-    plt.figure()
-    plt.imshow(cv2.cvtColor(cv2.imread(img_name), cv2.COLOR_BGR2RGB))
-    plt.plot(y + y[:1], x + x[:1], 'r')
-    plt.show()
+    # Plot the detected cube
+    if plot_intermediate_results:
+        plt.figure()
+        plt.imshow(cv2.cvtColor(cv2.imread(img_name), cv2.COLOR_BGR2RGB))
+        plt.plot(y + y[:1], x + x[:1], 'r')
+        plt.title("Detected " + img_name)
+        plt.show()
 
     return x, y
 
+# Set up and compute the homography transformation
 
 # 4 pixels per mm
 f = 4
@@ -55,6 +58,7 @@ def compute_homography(img_name, x, y):
 
     return tf.warp(img, inverse_map=tform.inverse, output_shape=(rubiks_mm * f, rubiks_mm * f))
 
+# Find the mean RGB color for each square
 def get_face_colors(transformed_face):
     avg_sqr_colors = []
     for i in range(3):
@@ -69,6 +73,7 @@ def get_face_colors(transformed_face):
 
     return avg_sqr_colors
 
+# Generate and plot the cube layout
 def plot_cube_layout(all_colors, with_spaces=True):
     straight_img = np.zeros((18, 3, 3))
     for i in range(54):
@@ -85,9 +90,6 @@ def plot_cube_layout(all_colors, with_spaces=True):
                 for j in range(3):
                     side[(s+1)*i+1:(s+1)*i+(s+1), (s+1)*j+1:(s+1)*j+(s+1)] = side_colors[3*i + j]
 
-            # plt.figure()
-            # plt.imshow(np.ndarray.astype(side, np.uint8))
-            # plt.show()
             return side
 
         show_img = np.zeros((9*s + 9 + 1, 12*s + 12 + 1, 3))
@@ -114,12 +116,15 @@ def plot_cube_layout(all_colors, with_spaces=True):
     plt.title("Cube Layout")
     plt.show()
 
+# Print the instructions step-by-step to solve the cube
 def print_solution_instructions(solution, face_center_labels):
     print("=" * 10)
     print("SOLUTION")
     print("=" * 10)
     for move in solution:
         f = move[0]
+
+        # Find the top label
         if f == 'L' or f == 'F' or f == 'R' or f == 'B':
             top_label = face_center_labels[0]
         elif f == 'U':
@@ -127,6 +132,7 @@ def print_solution_instructions(solution, face_center_labels):
         else:
             top_label = face_center_labels[2]
 
+        # Find the front label
         if f == 'U': front_label = face_center_labels[0]
         elif f == 'L': front_label = face_center_labels[1]
         elif f == 'F': front_label = face_center_labels[2]
@@ -134,6 +140,7 @@ def print_solution_instructions(solution, face_center_labels):
         elif f == 'B': front_label = face_center_labels[4]
         else: front_label = face_center_labels[5]
 
+        # Find the direction to move
         if len(move) == 1:
             direction = "clockwise"
         elif move[1] == '\'':
@@ -141,6 +148,7 @@ def print_solution_instructions(solution, face_center_labels):
         else:
             direction = "clockwise twice"
 
+        # Print the instructions
         print("Orient the cube so that center " + str(front_label) + " is facing you and center " + str(top_label) + " is on top")
         print("Turn the side of the cube facing you " + direction)
         input("Press the ENTER key to show the next step")
@@ -152,19 +160,22 @@ def print_solution_instructions(solution, face_center_labels):
 # Find the average RGB value for each square on the cube
 all_colors = []
 for side in sides:
-    img_name = "test_images/" + side + "3.jpg"
+    img_name = "test_images/" + side + dataset + ".jpg"
     x, y = get_corners_canny(img_name)
     warped = compute_homography(img_name, x, y)
     all_colors += get_face_colors(warped)
 
-    # plt.figure()
-    # plt.imshow(warped)
-    # plt.plot(x2 + x2[:1], y2 + y2[:1], 'r-')
-    # plt.plot([19*f, 19*f], [1, 57*f], 'r-')
-    # plt.plot([38*f, 38*f], [1, 57*f], 'r-')
-    # plt.plot([1, 57*f], [19*f, 19*f], 'r-')
-    # plt.plot([1, 57*f], [38*f, 38*f], 'r-')
-    # plt.show()
+    # Plot the transformed face
+    if plot_intermediate_results:
+        plt.figure()
+        plt.imshow(warped.transpose((1, 0, 2)))
+        plt.plot(x2 + x2[:1], y2 + y2[:1], 'r-')
+        plt.plot([19*f, 19*f], [1, 57*f], 'r-')
+        plt.plot([38*f, 38*f], [1, 57*f], 'r-')
+        plt.plot([1, 57*f], [19*f, 19*f], 'r-')
+        plt.plot([1, 57*f], [38*f, 38*f], 'r-')
+        plt.title("Transformed " + img_name)
+        plt.show()
 
 # Performs k-means clustering on the RGB values and give them
 # each one of k labels, where k = 6
